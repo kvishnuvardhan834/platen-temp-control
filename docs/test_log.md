@@ -57,3 +57,42 @@ LQR + integral, Q = diag(0, 10, 1e-3). Same heat-up and cold-mold test.
 - Limitation: assumes the heater temperature is measured. A real press needs an observer to estimate it from the platen sensor.
 
 Plot: `media/lqr_weight_experiment.png`
+## Experiment 4 – Robustness (wrong plant, noise, sensor delay)
+All controllers designed on the nominal model and NOT retuned. Same heat-up and cold-mold test.
+
+**A. Plant parameter errors – cold-mold dip [°C]**
+
+| Case | PI tc=30 | PI tc=60 | LQR R=100 | LQR R=1000 |
+|---|---|---|---|---|
+| Nominal   | 6.73 | 10.29 | 3.11 | 5.54 |
+| Cp +30 %  | 6.37 | 9.07  | 2.89 | 5.24 |
+| Cp −30 %  | 7.24 | 11.57 | 3.57 | 5.97 |
+| Rpa +30 % | 6.74 | 10.33 | 3.03 | 5.54 |
+| Rpa −30 % | 7.30 | 10.21 | 4.77 | 6.43 |
+| Pmax −20 %| 8.98 | 11.47 | 6.75 | 8.16 |
+
+Heat-up overshoot stayed below 1.3 °C in every case.
+
+**B. Sensor noise (σ = 0.5 °C) – heater command jitter, % of full power**
+
+| PI tc=30 | PI tc=60 | LQR R=100 | LQR R=1000 |
+|---|---|---|---|
+| 4.5 | 2.6 | 16.1 | 6.6 |
+
+**C. Sensor delay – oscillation before the mold (peak deviation from setpoint, °C)**
+
+| Delay | PI tc=30 | PI tc=60 | LQR R=100 | LQR R=1000 |
+|---|---|---|---|---|
+| 0 s   | 0.00 | 0.00 | 0.00  | 0.00  |
+| 10 s  | 0.00 | 0.00 | 0.00  | 0.00  |
+| 30 s  | 0.00 | 0.00 | 3.05  | 0.00  |
+| 60 s  | 4.96 | 0.00 | 11.28 | 5.58  |
+| 120 s | 21.53| 9.60 | 23.11 | 22.63 |
+
+**Observations**
+- A ±30 % error in platen mass or heat loss, or a 20 % weaker heater, changes the dip by only 1–3 °C and nothing goes unstable. Integral action absorbs the model error.
+- Noise: the aggressive LQR (R = 100) swings the heater by 16 % of full power, about 6× more than PI tc = 60. That would wear an SSR or contactor.
+- Delay: LQR R = 100 oscillates from 30 s of sensor delay, and PI tc = 30 and LQR R = 1000 from 60 s. PI tc = 60 is the only one that stays stable at 60 s. At 120 s all four oscillate (the small dip for PI tc = 60 there is meaningless because it is already ringing).
+- Decision: PI tc = 60 with anti-windup is the default for a real press. LQR R = 100 only makes sense with a fast sensor and an observer to filter noise.
+
+Plot: `media/robustness_experiment.png`
