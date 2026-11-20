@@ -38,3 +38,22 @@ PI + anti-windup, gains fixed at Kp = 0.0514, Ti = 288 s (tc = 60 s). Same heat-
 - Caveat: the mold pulse is rounded to whole samples (100 s at Ts = 20, 120 s at Ts = 60), which slightly inflates those two dips.
 
 Plot: `media/sample_time_experiment.png`
+## Experiment 3 – LQR effort weight (R)
+LQR + integral, Q = diag(0, 10, 1e-3). Same heat-up and cold-mold test.
+
+| R | Overshoot [°C] | Settle [s] | Mold dip [°C] | Recovery [s] | Peak heater after mold |
+|---|---|---|---|---|---|
+| 10      | 0.12 | 648  | 2.10  | 94  | 100 % |
+| 100     | 0.28 | 650  | 3.11  | 100 | 100 % |
+| 1,000   | 0.86 | 660  | 5.54  | 274 | 100 % |
+| 10,000  | 2.44 | 1005 | 9.85  | 512 | 92 %  |
+| 100,000 | 5.50 | 1402 | 13.40 | 871 | 66 %  |
+
+**Observations**
+- R sets how aggressive the controller is. Going from R = 10 to 100,000 grows the cold-mold dip about 6× and recovery about 9×.
+- Very large R is too timid: at R = 100,000 the heater peaks at 66 % even though the platen is 13 °C low.
+- Very small R gives the smallest dip, but the state-feedback gain on the platen temperature is about 7× larger than at R = 1,000 (0.96 vs 0.13), which would amplify sensor noise on real hardware.
+- LQR at R = 100 (3.1 °C dip) beats the best PI from Experiment 1 (6.7 °C at tc = 30) because it also uses the heater temperature.
+- Limitation: assumes the heater temperature is measured. A real press needs an observer to estimate it from the platen sensor.
+
+Plot: `media/lqr_weight_experiment.png`
