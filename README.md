@@ -55,7 +55,21 @@ Results from `matlab/run_comparison.m` (MATLAB). Dip and recovery are not given 
 
 **Takeaway:** without anti-windup the platen reaches about 263 °C, enough to burn parts. Clamping anti-windup cuts the overshoot from 85.7 °C to 0.26 °C with no slower heat-up. LQR roughly halves the dip from a cold mold because it also uses the heater temperature.
 
-## 4. How to run
+**Design choice:** PI with tc = 60 s and anti-windup is the recommended controller. It had the lowest heater jitter under sensor noise (2.6 % vs 16 % for aggressive LQR) and was the only one stable with 60 s of sensor delay. See `docs/test_log.md`.
+
+## 4. Experiments
+
+Full tables and plots are in [`docs/test_log.md`](docs/test_log.md).
+
+| # | Experiment | Finding |
+|---|---|---|
+| 1 | PI tuning speed (tc = 30 / 60 / 120 s) | Faster tuning halves the cold-mold dip, but makes windup worse without anti-windup |
+| 2 | PI sample time (1–60 s) | No visible change up to Ts = 10 s; a 60 s task raises the dip about 47 % |
+| 3 | LQR effort weight R (10 – 100,000) | R sets aggressiveness: dip from 2.1 °C to 13.4 °C |
+| 4 | Robustness: ±30 % plant error, noise, sensor delay | PI tc = 60 is quietest and the only one stable at 60 s sensor delay |
+
+
+## 5. How to run
 
 **MATLAB** (base MATLAB, R2018b or newer; no toolboxes needed)
 
@@ -75,7 +89,7 @@ This prints the results table and saves `media/controller_comparison.png`.
 5. Use Trace to plot `fbPlant.rTp`, `rDuty` and `rSetpoint`; set `xStart`, then `xLoadColdMold`.
 6. Set `fbPI.xAntiWindup := FALSE` to show windup on the PLC.
 
-## 5. Repository layout
+## 6. Repository layout
 
 ```
 matlab/   model, PI and LQR simulations, comparison script
@@ -84,7 +98,7 @@ docs/     derivations, tuning notes, test log
 media/    plots, HMI screenshots, demo video link
 ```
 
-## 6. Planned extensions
+## 7. Planned extensions
 
 - Luenberger observer or Kalman filter to estimate heater temperature from the platen sensor only
 - Upper + lower platen (two coupled loops)
