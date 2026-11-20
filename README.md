@@ -6,7 +6,7 @@ This project models a heated platen, designs a digital PI controller with anti-w
 
 **Courses applied:** Modern Control Systems (state space, LQR), Digital Control Systems (ZOH discretization, sample time, discrete PI), Engineering Analysis (thermal modeling).
 
-> Demo video and plots: *add after Week 2* → `media/`
+![Controller comparison](media/controller_comparison.png)
 
 ---
 
@@ -29,7 +29,7 @@ Cp · dTp/dt = (Th − Tp)/Rhp − (Tp − Ta)/Rpa + w
 | u | Heater command (SSR duty) | 0 – 1 |
 | w | Disturbance heat (cold mold) | −3,000 W for 90 s |
 
-The model has a fast heater pole (τ ≈ 8 s) and a slow platen pole (τ ≈ 2,300 s, about 38 min), with a DC gain of 620 K per unit of heater output. It is discretized with an exact zero-order hold at Ts = 1 s (`expm`, so no toolbox is needed).
+The model has a fast heater pole (τ ≈ 7.6 s) and a slow platen pole (τ ≈ 2,294 s, about 38 min), with a DC gain of 620 K per unit of heater output. It is discretized with an exact zero-order hold at Ts = 1 s (`expm`, so no toolbox is needed).
 
 Values are generic, chosen to behave like a typical electrically heated platen. They are not company data.
 
@@ -37,23 +37,23 @@ Values are generic, chosen to behave like a typical electrically heated platen. 
 
 | Controller | Design method | Notes |
 |---|---|---|
-| PI, no anti-windup | SIMC tuning on a FOPDT approximation (τc = 60 s, θ = 12 s) | Kp = 0.0486 /°C, Ti = 288 s |
+| PI, no anti-windup | SIMC tuning on a FOPDT approximation (τc = 60 s, θ = 12 s) | Kp = 0.0514 /°C, Ti = 288 s |
 | PI + anti-windup | Same gains, conditional integration (clamping) | The algorithm used on the PLC |
-| LQR + integral | Discrete LQR on the augmented state [Th, Tp, ∫e] | Q = diag(0, 10, 1e-3), R = 1e3. Assumes Th is measured; an observer is a planned extension |
+| LQR + integral | Discrete LQR on the augmented state [Th, Tp, ∫e] | Q = diag(0, 10, 1e-3), R = 1e3, K = [0.0065 0.1290 0.00098]. Assumes Th is measured; an observer is a planned extension |
 
-## 3. Expected results
+## 3. Results
 
 Test: heat-up from 25 °C to 177 °C, then a cold mold is loaded at t = 50 min.
 
-| Controller | Overshoot | Settling (±1 °C) | Mold dip | Recovery |
-|---|---|---|---|---|
-| PI, no anti-windup | ~85 °C | > 50 min | – | – |
-| PI + anti-windup | ~0.4 °C | ~13 min | ~10.6 °C | ~10 min |
-| LQR + integral | ~0.9 °C | ~11 min | ~5.5 °C | ~4.6 min |
+| Controller | Overshoot | Settling (±1 °C) | Mold dip | Recovery | Energy |
+|---|---|---|---|---|---|
+| PI, no anti-windup | 85.7 °C | > 50 min | – | – | 2.06 kWh |
+| PI + anti-windup | 0.26 °C | 12.8 min | 10.3 °C | 10.1 min | 1.98 kWh |
+| LQR + integral | 0.86 °C | 11.0 min | 5.5 °C | 4.6 min | 1.98 kWh |
 
-These are from a Python check of the same equations. Replace them with your MATLAB output and plot.
+Results from `matlab/run_comparison.m` (MATLAB). Dip and recovery are not given for the no-anti-windup case because it was still recovering from its overshoot when the mold was loaded.
 
-**Takeaway:** anti-windup removes about 85 °C of overshoot at no cost in heat-up time. LQR halves the dip from a cold mold because it also uses the heater temperature.
+**Takeaway:** without anti-windup the platen reaches about 263 °C, enough to burn parts. Clamping anti-windup cuts the overshoot from 85.7 °C to 0.26 °C with no slower heat-up. LQR roughly halves the dip from a cold mold because it also uses the heater temperature.
 
 ## 4. How to run
 
